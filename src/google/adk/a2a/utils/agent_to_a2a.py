@@ -36,8 +36,8 @@ from typing import Union
 from starlette.applications import Starlette
 
 from ...agents.base_agent import BaseAgent
-from ...auth.credential_service.base_credential_service import BaseCredentialService
 from ...artifacts.base_artifact_service import BaseArtifactService
+from ...auth.credential_service.base_credential_service import BaseCredentialService
 from ...memory.base_memory_service import BaseMemoryService
 from ...sessions.base_session_service import BaseSessionService
 from ...artifacts.in_memory_artifact_service import InMemoryArtifactService
