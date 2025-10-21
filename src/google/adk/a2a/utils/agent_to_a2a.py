@@ -36,6 +36,10 @@ from typing import Union
 from starlette.applications import Starlette
 
 from ...agents.base_agent import BaseAgent
+from ...auth.credential_service.base_credential_service import BaseCredentialService
+from ...artifacts.base_artifact_service import BaseArtifactService
+from ...memory.base_memory_service import BaseMemoryService
+from ...sessions.base_session_service import BaseSessionService
 from ...artifacts.in_memory_artifact_service import InMemoryArtifactService
 from ...auth.credential_service.in_memory_credential_service import InMemoryCredentialService
 from ...cli.utils.logs import setup_adk_logger
@@ -90,6 +94,10 @@ def to_a2a(
     port: int = 8000,
     protocol: str = "http",
     agent_card: Optional[Union[AgentCard, str]] = None,
+    session_service: Optional[BaseSessionService] = InMemorySessionService(),
+    artifact_service: Optional[BaseArtifactService] = InMemoryArtifactService(),
+    memory_service: Optional[BaseMemoryService] = InMemoryMemoryService(),
+    credential_service: Optional[BaseCredentialService] = InMemoryCredentialService()  
 ) -> Starlette:
   """Convert an ADK agent to a A2A Starlette application.
 
@@ -101,7 +109,14 @@ def to_a2a(
       agent_card: Optional pre-built AgentCard object or path to agent card
                   JSON. If not provided, will be built automatically from the
                   agent.
-
+      artifact_service: Service for artifact management (file storage, logs, etc.).
+                        Defaults to in-memory artifact service.
+      session_service: Service for session management. Defaults to in-memory service.
+      memory_service: Service for conversation or workspace memory. 
+                      Defaults to in-memory memory service.
+      credential_service: Service for authentication/credential management. 
+                          Defaults to in-memory credential service.
+      
   Returns:
       A Starlette application that can be run with uvicorn
 
@@ -121,11 +136,10 @@ def to_a2a(
     return Runner(
         app_name=agent.name or "adk_agent",
         agent=agent,
-        # Use minimal services - in a real implementation these could be configured
-        artifact_service=InMemoryArtifactService(),
-        session_service=InMemorySessionService(),
-        memory_service=InMemoryMemoryService(),
-        credential_service=InMemoryCredentialService(),
+        artifact_service=artifact_service,
+        session_service=session_service,
+        memory_service=memory_service,
+        credential_service=credential_service,
     )
 
   # Create A2A components
