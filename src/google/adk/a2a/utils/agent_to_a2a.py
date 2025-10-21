@@ -94,10 +94,10 @@ def to_a2a(
     port: int = 8000,
     protocol: str = "http",
     agent_card: Optional[Union[AgentCard, str]] = None,
-    session_service: Optional[BaseSessionService] = InMemorySessionService(),
     artifact_service: Optional[BaseArtifactService] = InMemoryArtifactService(),
+    credential_service: Optional[BaseCredentialService] = InMemoryCredentialService(),
     memory_service: Optional[BaseMemoryService] = InMemoryMemoryService(),
-    credential_service: Optional[BaseCredentialService] = InMemoryCredentialService()  
+    session_service: Optional[BaseSessionService] = InMemorySessionService(),
 ) -> Starlette:
   """Convert an ADK agent to a A2A Starlette application.
 
