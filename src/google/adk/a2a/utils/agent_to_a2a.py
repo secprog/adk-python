@@ -112,9 +112,9 @@ def to_a2a(
       artifact_service: Service for artifact management (file storage, logs, etc.).
                         Defaults to in-memory artifact service.
       credential_service: Service for authentication/credential management.
-                          Defaults to in-memory credential service.
+                        Defaults to in-memory credential service.
       memory_service: Service for conversation or workspace memory.
-                      Defaults to in-memory memory service.
+                        Defaults to in-memory memory service.
       session_service: Service for session management. Defaults to in-memory session service.
       
   Returns:
