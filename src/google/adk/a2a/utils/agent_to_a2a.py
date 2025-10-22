@@ -37,12 +37,12 @@ from starlette.applications import Starlette
 
 from ...agents.base_agent import BaseAgent
 from ...artifacts.base_artifact_service import BaseArtifactService
-from ...auth.credential_service.base_credential_service import BaseCredentialService
-from ...memory.base_memory_service import BaseMemoryService
-from ...sessions.base_session_service import BaseSessionService
 from ...artifacts.in_memory_artifact_service import InMemoryArtifactService
+from ...auth.credential_service.base_credential_service import BaseCredentialService
 from ...auth.credential_service.in_memory_credential_service import InMemoryCredentialService
 from ...cli.utils.logs import setup_adk_logger
+from ...memory.base_memory_service import BaseMemoryService
+from ...sessions.base_session_service import BaseSessionService
 from ...memory.in_memory_memory_service import InMemoryMemoryService
 from ...runners import Runner
 from ...sessions.in_memory_session_service import InMemorySessionService
