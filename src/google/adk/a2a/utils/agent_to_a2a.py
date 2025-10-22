@@ -94,10 +94,10 @@ def to_a2a(
     port: int = 8000,
     protocol: str = "http",
     agent_card: Optional[Union[AgentCard, str]] = None,
-    artifact_service: Optional[BaseArtifactService] = InMemoryArtifactService(),
-    credential_service: Optional[BaseCredentialService] = InMemoryCredentialService(),
-    memory_service: Optional[BaseMemoryService] = InMemoryMemoryService(),
-    session_service: Optional[BaseSessionService] = InMemorySessionService(),
+    artifact_service: Optional[BaseArtifactService] = None,
+    credential_service: Optional[BaseCredentialService] = None,
+    memory_service: Optional[BaseMemoryService] = None,
+    session_service: Optional[BaseSessionService] = None,
 ) -> Starlette:
   """Convert an ADK agent to a A2A Starlette application.
 
@@ -111,11 +111,11 @@ def to_a2a(
                   agent.
       artifact_service: Service for artifact management (file storage, logs, etc.).
                         Defaults to in-memory artifact service.
-      credential_service: Service for authentication/credential management. 
+      credential_service: Service for authentication/credential management.
                           Defaults to in-memory credential service.
-      memory_service: Service for conversation or workspace memory. 
+      memory_service: Service for conversation or workspace memory.
                       Defaults to in-memory memory service.
-      session_service: Service for session management. Defaults to in-memory service.
+      session_service: Service for session management. Defaults to in-memory session service.
       
   Returns:
       A Starlette application that can be run with uvicorn
@@ -136,10 +136,10 @@ def to_a2a(
     return Runner(
         app_name=agent.name or "adk_agent",
         agent=agent,
-        artifact_service=artifact_service,
-        session_service=session_service,
-        memory_service=memory_service,
-        credential_service=credential_service,
+        artifact_service=artifact_service or InMemoryArtifactService(),
+        session_service=session_service or InMemorySessionService(),
+        memory_service=memory_service or InMemoryMemoryService(),
+        credential_service=credential_service or InMemoryCredentialService(),
     )
 
   # Create A2A components
