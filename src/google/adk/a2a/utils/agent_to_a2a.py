@@ -111,11 +111,11 @@ def to_a2a(
                   agent.
       artifact_service: Service for artifact management (file storage, logs, etc.).
                         Defaults to in-memory artifact service.
-      credential_service: Service for authentication/credential management. 
+      credential_service: Service for authentication/credential management.
                           Defaults to in-memory credential service.
-      memory_service: Service for conversation or workspace memory. 
+      memory_service: Service for conversation or workspace memory.
                       Defaults to in-memory memory service.
-      session_service: Service for session management. Defaults to in-memory service.
+      session_service: Service for session management. Defaults to in-memory session service.
       
   Returns:
       A Starlette application that can be run with uvicorn
