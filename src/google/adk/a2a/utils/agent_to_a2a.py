@@ -136,10 +136,10 @@ def to_a2a(
     return Runner(
         app_name=agent.name or "adk_agent",
         agent=agent,
-        artifact_service=artifact_service,
-        session_service=session_service,
-        memory_service=memory_service,
-        credential_service=credential_service,
+        artifact_service=artifact_service or InMemoryArtifactService(),
+        session_service=session_service or InMemorySessionService(),
+        memory_service=memory_service or InMemoryMemoryService(),
+        credential_service=credential_service or InMemoryCredentialService(),
     )
 
   # Create A2A components
