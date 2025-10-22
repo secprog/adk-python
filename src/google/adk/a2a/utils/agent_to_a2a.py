@@ -115,7 +115,7 @@ def to_a2a(
                         Defaults to in-memory credential service.
       memory_service: Service for conversation or workspace memory.
                         Defaults to in-memory memory service.
-      session_service: Service for session management. 
+      session_service: Service for session management.
                         Defaults to in-memory session service.
       
   Returns:
