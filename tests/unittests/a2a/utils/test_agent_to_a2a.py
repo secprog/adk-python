@@ -110,155 +110,71 @@ class TestToA2A:
           }
       }
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_default_parameters(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_default_parameters(self, mock_a2a_components):
     """Test to_a2a with default parameters."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent)
 
     # Assert
-    assert result == mock_app
-    mock_starlette_class.assert_called_once()
-    mock_task_store_class.assert_called_once()
-    mock_agent_executor_class.assert_called_once()
-    mock_request_handler_class.assert_called_once_with(
-        agent_executor=mock_agent_executor, task_store=mock_task_store
+    assert result == mocks["app"]
+    mocks["classes"]["starlette"].assert_called_once()
+    mocks["classes"]["task_store"].assert_called_once()
+    mocks["classes"]["agent_executor"].assert_called_once()
+    mocks["classes"]["request_handler"].assert_called_once_with(
+        agent_executor=mocks["agent_executor"], task_store=mocks["task_store"]
     )
-    mock_card_builder_class.assert_called_once_with(
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://localhost:8000/"
     )
-    mock_app.add_event_handler.assert_called_once_with(
-        "startup", mock_app.add_event_handler.call_args[0][1]
+    mocks["app"].add_event_handler.assert_called_once_with(
+        "startup", mocks["app"].add_event_handler.call_args[0][1]
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_custom_host_port(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_custom_host_port(self, mock_a2a_components):
     """Test to_a2a with custom host and port."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, host="example.com", port=9000)
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://example.com:9000/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_agent_without_name(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_agent_without_name(self, mock_a2a_components):
     """Test to_a2a with agent that has no name."""
     # Arrange
+    mocks = mock_a2a_components
     self.mock_agent.name = None
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
 
     # Act
     result = to_a2a(self.mock_agent)
 
     # Assert
-    assert result == mock_app
+    assert result == mocks["app"]
     # The create_runner function should use "adk_agent" as default name
     # We can't directly test the create_runner function, but we can verify
     # the agent executor was created with the runner function
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_creates_runner_with_correct_services(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_creates_runner_with_correct_services(self, mock_a2a_components):
     """Test that the create_runner function creates Runner with correct services."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent)
 
     # Assert
-    assert result == mock_app
+    assert result == mocks["app"]
     # Verify that the agent executor was created with a runner function
-    mock_agent_executor_class.assert_called_once()
-    call_args = mock_agent_executor_class.call_args
+    mocks["classes"]["agent_executor"].assert_called_once()
+    call_args = mocks["classes"]["agent_executor"].call_args
     assert "runner" in call_args[1]
     runner_func = call_args[1]["runner"]
     assert callable(runner_func)
@@ -477,38 +393,17 @@ class TestToA2A:
     with pytest.raises(Exception, match="Build failed"):
       await startup_handler()
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_returns_starlette_app(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_returns_starlette_app(self, mock_a2a_components):
     """Test that to_a2a returns a Starlette application."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent)
 
     # Assert
     assert isinstance(result, Mock)  # Mock of Starlette
-    assert result == mock_app
+    assert result == mocks["app"]
 
   def test_to_a2a_with_none_agent(self):
     """Test that to_a2a raises error when agent is None."""
@@ -531,213 +426,87 @@ class TestToA2A:
 
       asyncio.run(app.router.on_startup[0]())
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_custom_port_zero(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_custom_port_zero(self, mock_a2a_components):
     """Test to_a2a with port 0 (dynamic port assignment)."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, port=0)
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://localhost:0/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_empty_string_host(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_empty_string_host(self, mock_a2a_components):
     """Test to_a2a with empty string host."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, host="")
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://:8000/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_negative_port(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_negative_port(self, mock_a2a_components):
     """Test to_a2a with negative port number."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, port=-1)
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://localhost:-1/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_very_large_port(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_very_large_port(self, mock_a2a_components):
     """Test to_a2a with very large port number."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, port=65535)
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://localhost:65535/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_special_characters_in_host(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_special_characters_in_host(self, mock_a2a_components):
     """Test to_a2a with special characters in host name."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, host="test-host.example.com")
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://test-host.example.com:8000/"
     )
 
-  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
-  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
-  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
-  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
-  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
-  def test_to_a2a_with_ip_address_host(
-      self,
-      mock_starlette_class,
-      mock_card_builder_class,
-      mock_task_store_class,
-      mock_request_handler_class,
-      mock_agent_executor_class,
-  ):
+  def test_to_a2a_with_ip_address_host(self, mock_a2a_components):
     """Test to_a2a with IP address as host."""
     # Arrange
-    mock_app = Mock(spec=Starlette)
-    mock_starlette_class.return_value = mock_app
-    mock_task_store = Mock(spec=InMemoryTaskStore)
-    mock_task_store_class.return_value = mock_task_store
-    mock_agent_executor = Mock(spec=A2aAgentExecutor)
-    mock_agent_executor_class.return_value = mock_agent_executor
-    mock_request_handler = Mock(spec=DefaultRequestHandler)
-    mock_request_handler_class.return_value = mock_request_handler
-    mock_card_builder = Mock(spec=AgentCardBuilder)
-    mock_card_builder_class.return_value = mock_card_builder
+    mocks = mock_a2a_components
 
     # Act
     result = to_a2a(self.mock_agent, host="192.168.1.1")
 
     # Assert
-    assert result == mock_app
-    mock_card_builder_class.assert_called_once_with(
+    assert result == mocks["app"]
+    mocks["classes"]["card_builder"].assert_called_once_with(
         agent=self.mock_agent, rpc_url="http://192.168.1.1:8000/"
     )
 
