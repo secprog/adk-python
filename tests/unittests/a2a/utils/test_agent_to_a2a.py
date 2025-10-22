@@ -34,10 +34,14 @@ try:
   from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
   from google.adk.a2a.utils.agent_to_a2a import to_a2a
   from google.adk.agents.base_agent import BaseAgent
+  from google.adk.artifacts.base_artifact_service import BaseArtifactService
   from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactService
+  from google.adk.auth.credential_service.base_credential_service import BaseCredentialService
   from google.adk.auth.credential_service.in_memory_credential_service import InMemoryCredentialService
+  from google.adk.memory.base_memory_service import BaseMemoryService
   from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
   from google.adk.runners import Runner
+  from google.adk.sessions.base_session_service import BaseSessionService
   from google.adk.sessions.in_memory_session_service import InMemorySessionService
   from starlette.applications import Starlette
 except ImportError as e:
@@ -869,3 +873,336 @@ class TestToA2A:
     # Act & Assert
     with pytest.raises(ValueError, match="Failed to load agent card from"):
       to_a2a(self.mock_agent, agent_card="/invalid/path.json")
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Runner")
+  async def test_to_a2a_with_custom_services(
+      self,
+      mock_runner_class,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test to_a2a with custom service implementations."""
+    # Arrange
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    mock_task_store = Mock(spec=InMemoryTaskStore)
+    mock_task_store_class.return_value = mock_task_store
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+    mock_request_handler = Mock(spec=DefaultRequestHandler)
+    mock_request_handler_class.return_value = mock_request_handler
+    mock_card_builder = Mock(spec=AgentCardBuilder)
+    mock_card_builder_class.return_value = mock_card_builder
+    mock_runner = Mock(spec=Runner)
+    mock_runner_class.return_value = mock_runner
+
+    # Create custom service mocks
+    custom_artifact_service = Mock(spec=BaseArtifactService)
+    custom_session_service = Mock(spec=BaseSessionService)
+    custom_memory_service = Mock(spec=BaseMemoryService)
+    custom_credential_service = Mock(spec=BaseCredentialService)
+
+    # Act
+    result = to_a2a(
+        self.mock_agent,
+        artifact_service=custom_artifact_service,
+        session_service=custom_session_service,
+        memory_service=custom_memory_service,
+        credential_service=custom_credential_service,
+    )
+
+    # Assert
+    assert result == mock_app
+    # Get the runner function that was passed to A2aAgentExecutor
+    call_args = mock_agent_executor_class.call_args
+    runner_func = call_args[1]["runner"]
+
+    # Call the runner function to verify it creates Runner with custom services
+    await runner_func()
+
+    # Verify Runner was created with custom services
+    mock_runner_class.assert_called_once_with(
+        app_name="test_agent",
+        agent=self.mock_agent,
+        artifact_service=custom_artifact_service,
+        session_service=custom_session_service,
+        memory_service=custom_memory_service,
+        credential_service=custom_credential_service,
+    )
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Runner")
+  async def test_to_a2a_with_none_services_uses_defaults(
+      self,
+      mock_runner_class,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test to_a2a with None services uses default in-memory services."""
+    # Arrange
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    mock_task_store = Mock(spec=InMemoryTaskStore)
+    mock_task_store_class.return_value = mock_task_store
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+    mock_request_handler = Mock(spec=DefaultRequestHandler)
+    mock_request_handler_class.return_value = mock_request_handler
+    mock_card_builder = Mock(spec=AgentCardBuilder)
+    mock_card_builder_class.return_value = mock_card_builder
+    mock_runner = Mock(spec=Runner)
+    mock_runner_class.return_value = mock_runner
+
+    # Act
+    result = to_a2a(
+        self.mock_agent,
+        artifact_service=None,
+        session_service=None,
+        memory_service=None,
+        credential_service=None,
+    )
+
+    # Assert
+    assert result == mock_app
+    # Get the runner function that was passed to A2aAgentExecutor
+    call_args = mock_agent_executor_class.call_args
+    runner_func = call_args[1]["runner"]
+
+    # Call the runner function to verify it creates Runner with default services
+    await runner_func()
+
+    # Verify Runner was created with default services
+    mock_runner_class.assert_called_once()
+    call_args = mock_runner_class.call_args[1]
+    assert call_args["app_name"] == "test_agent"
+    assert call_args["agent"] == self.mock_agent
+    # Verify the services are of the correct default types
+    assert isinstance(call_args["artifact_service"], InMemoryArtifactService)
+    assert isinstance(call_args["session_service"], InMemorySessionService)
+    assert isinstance(call_args["memory_service"], InMemoryMemoryService)
+    assert isinstance(call_args["credential_service"], InMemoryCredentialService)
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Runner")
+  async def test_to_a2a_with_mixed_services(
+      self,
+      mock_runner_class,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test to_a2a with mix of custom and default services."""
+    # Arrange
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    mock_task_store = Mock(spec=InMemoryTaskStore)
+    mock_task_store_class.return_value = mock_task_store
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+    mock_request_handler = Mock(spec=DefaultRequestHandler)
+    mock_request_handler_class.return_value = mock_request_handler
+    mock_card_builder = Mock(spec=AgentCardBuilder)
+    mock_card_builder_class.return_value = mock_card_builder
+    mock_runner = Mock(spec=Runner)
+    mock_runner_class.return_value = mock_runner
+
+    # Create custom service mocks for some services
+    custom_artifact_service = Mock(spec=BaseArtifactService)
+    custom_memory_service = Mock(spec=BaseMemoryService)
+
+    # Act - only provide custom services for artifact and memory
+    result = to_a2a(
+        self.mock_agent,
+        artifact_service=custom_artifact_service,
+        memory_service=custom_memory_service,
+    )
+
+    # Assert
+    assert result == mock_app
+    # Get the runner function that was passed to A2aAgentExecutor
+    call_args = mock_agent_executor_class.call_args
+    runner_func = call_args[1]["runner"]
+
+    # Call the runner function to verify it creates Runner with mixed services
+    await runner_func()
+
+    # Verify Runner was created with mixed services
+    mock_runner_class.assert_called_once()
+    call_args = mock_runner_class.call_args[1]
+    assert call_args["app_name"] == "test_agent"
+    assert call_args["agent"] == self.mock_agent
+    # Verify custom services are used
+    assert call_args["artifact_service"] == custom_artifact_service
+    assert call_args["memory_service"] == custom_memory_service
+    # Verify default services are used for the others
+    assert isinstance(call_args["session_service"], InMemorySessionService)
+    assert isinstance(call_args["credential_service"], InMemoryCredentialService)
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Runner")
+  async def test_to_a2a_services_parameter_order_independence(
+      self,
+      mock_runner_class,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test that services can be provided in any order and still work correctly."""
+    # Arrange
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    mock_task_store = Mock(spec=InMemoryTaskStore)
+    mock_task_store_class.return_value = mock_task_store
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+    mock_request_handler = Mock(spec=DefaultRequestHandler)
+    mock_request_handler_class.return_value = mock_request_handler
+    mock_card_builder = Mock(spec=AgentCardBuilder)
+    mock_card_builder_class.return_value = mock_card_builder
+    mock_runner = Mock(spec=Runner)
+    mock_runner_class.return_value = mock_runner
+
+    # Create custom service mocks
+    custom_artifact_service = Mock(spec=BaseArtifactService)
+    custom_session_service = Mock(spec=BaseSessionService)
+    custom_memory_service = Mock(spec=BaseMemoryService)
+    custom_credential_service = Mock(spec=BaseCredentialService)
+
+    # Act - provide services in different order
+    result = to_a2a(
+        self.mock_agent,
+        credential_service=custom_credential_service,
+        artifact_service=custom_artifact_service,
+        session_service=custom_session_service,
+        memory_service=custom_memory_service,
+    )
+
+    # Assert
+    assert result == mock_app
+    # Get the runner function that was passed to A2aAgentExecutor
+    call_args = mock_agent_executor_class.call_args
+    runner_func = call_args[1]["runner"]
+
+    # Call the runner function to verify it creates Runner with correct services
+    await runner_func()
+
+    # Verify Runner was created with all custom services regardless of order
+    mock_runner_class.assert_called_once()
+    call_args = mock_runner_class.call_args[1]
+    assert call_args["artifact_service"] == custom_artifact_service
+    assert call_args["session_service"] == custom_session_service
+    assert call_args["memory_service"] == custom_memory_service
+    assert call_args["credential_service"] == custom_credential_service
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Runner")
+  async def test_to_a2a_with_agent_without_name_and_custom_services(
+      self,
+      mock_runner_class,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test to_a2a with agent that has no name and custom services."""
+    # Arrange
+    self.mock_agent.name = None
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    mock_task_store = Mock(spec=InMemoryTaskStore)
+    mock_task_store_class.return_value = mock_task_store
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+    mock_request_handler = Mock(spec=DefaultRequestHandler)
+    mock_request_handler_class.return_value = mock_request_handler
+    mock_card_builder = Mock(spec=AgentCardBuilder)
+    mock_card_builder_class.return_value = mock_card_builder
+    mock_runner = Mock(spec=Runner)
+    mock_runner_class.return_value = mock_runner
+
+    # Create custom service mocks
+    custom_artifact_service = Mock(spec=BaseArtifactService)
+    custom_session_service = Mock(spec=BaseSessionService)
+
+    # Act
+    result = to_a2a(
+        self.mock_agent,
+        artifact_service=custom_artifact_service,
+        session_service=custom_session_service,
+    )
+
+    # Assert
+    assert result == mock_app
+    # Get the runner function that was passed to A2aAgentExecutor
+    call_args = mock_agent_executor_class.call_args
+    runner_func = call_args[1]["runner"]
+
+    # Call the runner function to verify it creates Runner correctly
+    await runner_func()
+
+    # Verify Runner was created with default app_name and custom services
+    mock_runner_class.assert_called_once()
+    call_args = mock_runner_class.call_args[1]
+    assert call_args["app_name"] == "adk_agent"  # Default name when agent has no name
+    assert call_args["agent"] == self.mock_agent
+    assert call_args["artifact_service"] == custom_artifact_service
+    assert call_args["session_service"] == custom_session_service
+    # Verify default services are used for the others
+    assert isinstance(call_args["memory_service"], InMemoryMemoryService)
+    assert isinstance(call_args["credential_service"], InMemoryCredentialService)
+
+  def test_to_a2a_service_parameter_validation(self):
+    """Test that to_a2a accepts valid service types without raising errors."""
+    # Arrange
+    custom_artifact_service = Mock(spec=BaseArtifactService)
+    custom_session_service = Mock(spec=BaseSessionService)
+    custom_memory_service = Mock(spec=BaseMemoryService)
+    custom_credential_service = Mock(spec=BaseCredentialService)
+
+    # Act & Assert - should not raise any errors
+    with patch("google.adk.a2a.utils.agent_to_a2a.Starlette") as mock_starlette:
+      mock_app = Mock(spec=Starlette)
+      mock_starlette.return_value = mock_app
+      
+      # This should not raise any validation errors
+      result = to_a2a(
+          self.mock_agent,
+          artifact_service=custom_artifact_service,
+          session_service=custom_session_service,
+          memory_service=custom_memory_service,
+          credential_service=custom_credential_service,
+      )
+      
+      assert result == mock_app
