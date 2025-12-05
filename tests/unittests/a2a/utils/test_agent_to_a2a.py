@@ -19,6 +19,7 @@ from unittest.mock import patch
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.tasks import TaskStore
 from a2a.types import AgentCard
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
 from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
@@ -130,6 +131,47 @@ class TestToA2A:
     mock_app.add_event_handler.assert_called_once_with(
         "startup", mock_app.add_event_handler.call_args[0][1]
     )
+
+  @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
+  @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
+  @patch("google.adk.a2a.utils.agent_to_a2a.InMemoryTaskStore")
+  @patch("google.adk.a2a.utils.agent_to_a2a.AgentCardBuilder")
+  @patch("google.adk.a2a.utils.agent_to_a2a.Starlette")
+  def test_to_a2a_with_custom_task_store(
+      self,
+      mock_starlette_class,
+      mock_card_builder_class,
+      mock_task_store_class,
+      mock_request_handler_class,
+      mock_agent_executor_class,
+  ):
+    """Test to_a2a with a custom task store."""
+    # Arrange
+    mock_app = Mock(spec=Starlette)
+    mock_starlette_class.return_value = mock_app
+    custom_task_store = Mock(spec=TaskStore)
+    mock_agent_executor = Mock(spec=A2aAgentExecutor)
+    mock_agent_executor_class.return_value = mock_agent_executor
+
+    # Act
+    result = to_a2a(self.mock_agent, task_store=custom_task_store)
+
+    # Assert
+    assert result == mock_app
+    mock_starlette_class.assert_called_once()
+    # Verify InMemoryTaskStore was NOT created since we provided a custom one
+    mock_task_store_class.assert_not_called()
+    mock_agent_executor_class.assert_called_once()
+    # Verify the custom task store was used
+    mock_request_handler_class.assert_called_once_with(
+        agent_executor=mock_agent_executor, task_store=custom_task_store
+    )
+    mock_card_builder_class.assert_called_once_with(
+        agent=self.mock_agent, rpc_url="http://localhost:8000/"
+    )
+    mock_app.add_event_handler.assert_called_once_with(
+        "startup", mock_app.add_event_handler.call_args[0][1]
+  )
 
   @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
   @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")
