@@ -171,7 +171,7 @@ class TestToA2A:
     )
     mock_app.add_event_handler.assert_called_once_with(
         "startup", mock_app.add_event_handler.call_args[0][1]
-  )
+    )
 
   @patch("google.adk.a2a.utils.agent_to_a2a.A2aAgentExecutor")
   @patch("google.adk.a2a.utils.agent_to_a2a.DefaultRequestHandler")

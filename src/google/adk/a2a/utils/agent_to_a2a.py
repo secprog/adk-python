@@ -96,7 +96,7 @@ def to_a2a(
               runner will be created using in-memory services.
       task_store: Optional task store instance. If not provided, an
                   InMemoryTaskStore will be created. Must be compatible with
-                  DefaultRequestHandler's task_store parameter.      
+                  DefaultRequestHandler's task_store parameter.
   Returns:
       A Starlette application that can be run with uvicorn
 
