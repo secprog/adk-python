@@ -20,6 +20,7 @@ from a2a.server.agent_execution.context import RequestContext
 from a2a.server.events.event_queue import EventQueue
 from a2a.types import Message
 from a2a.types import TaskState
+from a2a.types import TaskStatusUpdateEvent
 from a2a.types import TextPart
 from google.adk.a2a.converters.request_converter import AgentRunRequest
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
@@ -582,23 +583,23 @@ class TestA2aAgentExecutor:
   async def test_cancel_with_task_id(self):
     """Test cancellation with a task ID."""
     self.mock_context.task_id = "test-task-id"
+    self.mock_context.context_id = "test-context-id"
 
-    # The current implementation raises NotImplementedError
-    with pytest.raises(
-        NotImplementedError, match="Cancellation is not supported"
-    ):
-      await self.executor.cancel(self.mock_context, self.mock_event_queue)
+    # Call cancel
+    await self.executor.cancel(self.mock_context, self.mock_event_queue)
 
-  @pytest.mark.asyncio
-  async def test_cancel_without_task_id(self):
-    """Test cancellation without a task ID."""
-    self.mock_context.task_id = None
+    # Verify that a cancellation event was enqueued
+    self.mock_event_queue.enqueue_event.assert_called_once()
+    enqueued_event = self.mock_event_queue.enqueue_event.call_args[0][0]
 
-    # The current implementation raises NotImplementedError regardless of task_id
-    with pytest.raises(
-        NotImplementedError, match="Cancellation is not supported"
-    ):
-      await self.executor.cancel(self.mock_context, self.mock_event_queue)
+    # Verify it's a TaskStatusUpdateEvent with canceled state
+    assert isinstance(enqueued_event, TaskStatusUpdateEvent)
+    assert enqueued_event.task_id == "test-task-id"
+    assert enqueued_event.context_id == "test-context-id"
+    assert enqueued_event.status.state == TaskState.canceled
+    assert enqueued_event.final is True
+    assert enqueued_event.status.message is not None
+    assert len(enqueued_event.status.message.parts) > 0
 
   @pytest.mark.asyncio
   async def test_execute_with_exception_handling(self):
