@@ -117,10 +117,20 @@ class A2aAgentExecutor(AgentExecutor):
     """Cancel the execution.
 
     Publishes a TaskStatusUpdateEvent with state TaskState.canceled to
-    indicate that the task has been canceled. Note that ADK Runner does
-    not currently support actively stopping a running agent, so this method
-    only publishes the cancellation status. The actual task execution may
-    continue until it completes naturally.
+    indicate that the task has been canceled. This is a cooperative
+    cancellation mechanism - the cancellation event is published to the
+    event queue, which will be consumed by the a2a-sdk infrastructure
+    even after cancellation is requested.
+
+    The a2a-sdk's DefaultRequestHandler ensures:
+    - The event queue continues to be consumed after cancellation
+    - Background cleanup properly releases resources
+    - The producer task is canceled if one exists
+
+    Note: ADK Runner does not currently support actively stopping a
+    running agent mid-execution, so this method publishes the cancellation
+    status event as required by the A2A protocol. The actual task execution
+    may continue until it completes naturally.
 
     Args:
         context: The request context containing the task ID to cancel.
