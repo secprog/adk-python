@@ -20,7 +20,9 @@ from typing import Union
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.tasks import InMemoryPushNotificationConfigStore
 from a2a.server.tasks import InMemoryTaskStore
+from a2a.server.tasks import PushNotificationConfigStore
 from a2a.server.tasks import TaskStore
 from a2a.types import AgentCard
 from starlette.applications import Starlette
@@ -81,6 +83,7 @@ def to_a2a(
     agent_card: Optional[Union[AgentCard, str]] = None,
     runner: Optional[Runner] = None,
     task_store: Optional[TaskStore] = None,
+    push_config_store: Optional[PushNotificationConfigStore] = None,
 ) -> Starlette:
   """Convert an ADK agent to a A2A Starlette application.
 
@@ -97,6 +100,10 @@ def to_a2a(
       task_store: Optional task store instance. If not provided, an
                   InMemoryTaskStore will be created. Must be compatible with
                   DefaultRequestHandler's task_store parameter.
+      push_config_store: Optional push notification config store instance.
+                         If not provided, an InMemoryPushNotificationConfigStore
+                         will be created. This enables support for A2A push
+                         notification configuration methods.
   Returns:
       A Starlette application that can be run with uvicorn
 
@@ -112,6 +119,11 @@ def to_a2a(
       from a2a.server.tasks import TaskStore
       class MyCustomTaskStore(TaskStore): ...  # A user-defined TaskStore; abstract methods must be implemented
       app = to_a2a(agent, task_store=MyCustomTaskStore())
+
+      # Or with custom push notification config store:
+      from a2a.server.tasks import PushNotificationConfigStore
+      class MyCustomPushStore(PushNotificationConfigStore): ...
+      app = to_a2a(agent, push_config_store=MyCustomPushStore())
   """
   # Set up ADK logging to ensure logs are visible when using uvicorn directly
   adk_logger = logging.getLogger("google_adk")
@@ -133,12 +145,17 @@ def to_a2a(
   if task_store is None:
     task_store = InMemoryTaskStore()
 
+  if push_config_store is None:
+    push_config_store = InMemoryPushNotificationConfigStore()
+
   agent_executor = A2aAgentExecutor(
       runner=runner or create_runner,
   )
 
   request_handler = DefaultRequestHandler(
-      agent_executor=agent_executor, task_store=task_store
+      agent_executor=agent_executor,
+      task_store=task_store,
+      push_config_store=push_config_store,
   )
 
   # Use provided agent card or build one from the agent

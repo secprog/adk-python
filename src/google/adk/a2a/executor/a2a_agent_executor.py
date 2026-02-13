@@ -114,9 +114,53 @@ class A2aAgentExecutor(AgentExecutor):
 
   @override
   async def cancel(self, context: RequestContext, event_queue: EventQueue):
-    """Cancel the execution."""
-    # TODO: Implement proper cancellation logic if needed
-    raise NotImplementedError('Cancellation is not supported')
+    """Cancel the execution.
+
+    Publishes a TaskStatusUpdateEvent with state TaskState.canceled to
+    indicate that the task has been canceled. This is a cooperative
+    cancellation mechanism - the cancellation event is published to the
+    event queue, which will be consumed by the a2a-sdk infrastructure
+    even after cancellation is requested.
+
+    The a2a-sdk's DefaultRequestHandler ensures:
+    - The event queue continues to be consumed after cancellation
+    - Background cleanup properly releases resources
+    - The producer task is canceled if one exists
+
+    Note: ADK Runner does not currently support actively stopping a
+    running agent mid-execution, so this method publishes the cancellation
+    status event as required by the A2A protocol. The actual task execution
+    may continue until it completes naturally.
+
+    Args:
+        context: The request context containing the task ID to cancel.
+        event_queue: The queue to publish the cancellation status update to.
+    """
+    logger.info(
+        'Canceling task %s (context: %s)',
+        context.task_id,
+        context.context_id,
+    )
+
+    # Publish the cancellation status update event
+    await event_queue.enqueue_event(
+        TaskStatusUpdateEvent(
+            task_id=context.task_id,
+            status=TaskStatus(
+                state=TaskState.canceled,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                message=Message(
+                    message_id=str(uuid.uuid4()),
+                    role=Role.agent,
+                    parts=[
+                        TextPart(text='Task cancellation requested'),
+                    ],
+                ),
+            ),
+            context_id=context.context_id,
+            final=True,
+        )
+    )
 
   @override
   async def execute(
